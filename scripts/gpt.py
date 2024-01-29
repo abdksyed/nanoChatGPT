@@ -75,7 +75,7 @@ class CausalSelfAttention(nn.Module):
                 q,
                 k,
                 v,
-                attn_mask=None, # Both attention_mask and is_causal can't be set.
+                attn_mask=None,  # Both attention_mask and is_causal can't be set.
                 dropout_p=self.dropout if self.training else 0,
                 is_causal=True,
             )
@@ -157,7 +157,6 @@ class GPT(nn.Module):
         )  # https://paperswithcode.com/method/weight-tying
 
     def get_num_params(self, trainable=True):
-        
         # report number of parameters
         total_params = sum(p.numel() for p in self.parameters())
         print("number of parameters: %.2fM" % (total_params / 1e6,))
@@ -285,7 +284,7 @@ class GPT(nn.Module):
                     sd[k].copy_(sd_hf[k])
 
         return self
-    
+
     def from_finetuned(self, path):
         self.load_state_dict(torch.load(path)["model_state_dict"], strict=True)
         return self
