@@ -1,14 +1,12 @@
 import os
 
-import torch
 from torch.utils.data import DataLoader
 
-from tokenizers import Tokenizer
 from datasets import load_dataset, load_from_disk
 
 import wandb
 
-from config import GPT2xlConfig, GPT2medConfig
+from config import GPT2medConfig
 from gpt import GPT
 from trainer import train
 from tokenizer import TiktokenTokenizer
@@ -17,9 +15,10 @@ from dataset import DahaosRLHF
 
 cfg = GPT2medConfig()
 cfg.batch_size = 8
-cfg.accumulation_steps = 16 # effective batch: 4*32=128
+cfg.accumulation_steps = 16  # effective batch: 4*32=128
 cfg.epochs = 3
-if cfg.device == "mps": os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = "1"
+if cfg.device == "mps":
+    os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 tokenizer = TiktokenTokenizer(cfg.tokenizer_name)
 
@@ -45,8 +44,12 @@ cfg.val_data = len(val_data)
 
 wandb.init(project="nanoChatGPT", name="gpt2med-reward", config=cfg)
 
-train_loader = DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True, num_workers=32)
-val_loader = DataLoader(val_data, batch_size=cfg.batch_size, shuffle=False, num_workers=32)
+train_loader = DataLoader(
+    train_data, batch_size=cfg.batch_size, shuffle=True, num_workers=8, pin_memory=True
+)
+val_loader = DataLoader(
+    val_data, batch_size=cfg.batch_size, shuffle=False, num_workers=8, pin_memory=True
+)
 
 model = GPT(cfg).from_pretrained(cfg.model_name)
 
