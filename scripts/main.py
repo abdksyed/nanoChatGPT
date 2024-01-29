@@ -8,6 +8,7 @@ import wandb
 
 from config import GPT2medConfig
 from gpt import GPT
+from gpt_rm import GPTReward
 from trainer import train
 from tokenizer import TiktokenTokenizer
 from dataset import DahaosRLHF
@@ -16,7 +17,7 @@ from dataset import DahaosRLHF
 cfg = GPT2medConfig()
 cfg.batch_size = 8
 cfg.accumulation_steps = 16  # effective batch: 4*32=128
-cfg.epochs = 3
+cfg.epochs = 10
 if cfg.device == "mps":
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
@@ -51,7 +52,7 @@ val_loader = DataLoader(
     val_data, batch_size=cfg.batch_size, shuffle=False, num_workers=8, pin_memory=True
 )
 
-model = GPT(cfg).from_pretrained(cfg.model_name)
+model = GPTReward(cfg).from_pretrained(path="./weights/sft_gpt2-medium.pth")
 
 
 # LoRA
