@@ -3,19 +3,17 @@
 import math
 
 import einops
-from pprint import pprint
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformers import GPT2Model
 from tokenizer import TiktokenTokenizer
 
 import peft
 from peft import LoraConfig
 
-from config import GPTConfig, GPT2Config, GPT2medConfig
+from config import GPT2medConfig
 
 # Seeding for reproducibility
 torch.manual_seed(42)
@@ -77,7 +75,7 @@ class CausalSelfAttention(nn.Module):
                 q,
                 k,
                 v,
-                attn_mask=attention_mask,
+                attn_mask=None, # Both attention_mask and is_causal can't be set.
                 dropout_p=self.dropout if self.training else 0,
                 is_causal=True,
             )
@@ -289,7 +287,7 @@ class GPT(nn.Module):
         return self
     
     def from_finetuned(self, path):
-        self.load_state_dict(torch.load(path), strict=True)
+        self.load_state_dict(torch.load(path)["model_state_dict"], strict=True)
         return self
 
     @torch.inference_mode()
