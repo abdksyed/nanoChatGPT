@@ -34,11 +34,15 @@ class KPairWiseLoss(nn.Module):
 
 
 class PairWiseLoss(nn.Module):
-    def forward(self, scores, response_mask):
+    def forward(self, pos, neg, response_mask):
+        scores = pos - neg
         loss = nn.functional.logsigmoid(scores) * response_mask
         loss = -1 * (loss.sum() / response_mask.sum())
 
-        return loss
+        acc_scores = (pos > neg).int() * response_mask
+        acc = acc_scores.sum() / response_mask.sum()
+
+        return acc*100, loss
 
 
 class GPTReward(nn.Module):
@@ -101,9 +105,9 @@ class GPTReward(nn.Module):
             # To make score as [[pos, neg], [pos, neg], ...]
             x = einops.rearrange(x, "(b n) t -> b n t", n=loss)
             pos, neg = x[:, 0, :], x[:, 1, :]
-            scores = pos - neg
 
-            return x, PairWiseLoss()(scores, response_mask)
+            acc, loss = PairWiseLoss()(pos, neg, response_mask)
+            return acc, loss
 
         return x, None
 
