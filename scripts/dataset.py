@@ -51,8 +51,18 @@ class DahaosRLHF(BaseDataset):
     def __getitem__(self, index):
         text_dict = self.data[index]
         prompt = text_dict["prompt"]
-        pos_text = prompt + text_dict["chosen"] + "<|endoftext|>"
-        neg_text = prompt + text_dict["rejected"] + "<|endoftext|>"
+        prompt_token = self.tokenizer(prompt, return_tensors="pt")
+        prompt_len = len(prompt_token["input_ids"])
+        # If prompt itself is greater than block_size
+        if prompt_len >= self.block_size:
+            inputs = prompt_token["input_ids"][: self.block_size]
+            inputs = torch.stack((inputs, inputs), dim=0)
+            attention_mask = prompt_token["attention_mask"][: self.block_size]
+            attention_mask = torch.stack((attention_mask, attention_mask), dim=0)
+            response = torch.tensor([0] * self.block_size)
+            return inputs, (attention_mask, response)
+
+        pos_text = prompt + text_dict["chosen"]
         pos_text = self.tokenizer(
             pos_text,
             max_length=self.block_size,
@@ -60,6 +70,7 @@ class DahaosRLHF(BaseDataset):
             truncation=True,
             return_tensors="pt",
         )
+        neg_text = prompt + text_dict["rejected"]
         neg_text = self.tokenizer(
             neg_text,
             max_length=self.block_size,
@@ -73,7 +84,18 @@ class DahaosRLHF(BaseDataset):
             (pos_text["attention_mask"], neg_text["attention_mask"]), dim=0
         )
 
-        return input_ids, attention_mask
+        response_mask = torch.tensor(
+            [0] * prompt_len + [1] * (self.block_size - prompt_len)
+        )
+        response_mask = torch.stack((response_mask, response_mask), dim=0)
+        response_mask = attention_mask & response_mask
+        response_mask = (
+            response_mask[0]
+            if response_mask[0].sum() > response_mask[1].sum()
+            else response_mask[1]
+        )
+
+        return input_ids, (attention_mask, response_mask)
 
 
 if __name__ == "__main__":
