@@ -39,8 +39,10 @@ class PairWiseLoss(nn.Module):
         loss = nn.functional.logsigmoid(scores) * response_mask
         loss = -1 * (loss.sum() / response_mask.sum())
 
-        acc_scores = (pos > neg).int() * response_mask
-        acc = acc_scores.sum() / response_mask.sum()
+        # acc_scores = (pos > neg).int() * response_mask
+        # acc = acc_scores.sum() / response_mask.sum()
+        acc_scores = (pos[:, -1] > neg[:, -1]).int() # last score for each seq.
+        acc = acc_scores.mean()
 
         return acc*100, loss
 

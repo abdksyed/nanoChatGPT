@@ -4,6 +4,8 @@ from torch.utils.data import DataLoader
 
 from datasets import load_dataset, load_from_disk
 
+from peft import LoraConfig, get_peft_model
+
 import wandb
 
 from config import GPT2medConfig
@@ -52,23 +54,23 @@ val_loader = DataLoader(
     val_data, batch_size=cfg.batch_size, shuffle=False, num_workers=8, pin_memory=True
 )
 
-model = GPTReward(cfg).from_pretrained(path="./weights/sft_gpt2-medium.pth")
+model = GPTReward(cfg).from_pretrained(path="../weights/sft_gpt2-medium.pth")
 
 
 # LoRA
-# target_modules = []
-# for n, m in model.named_modules():
-#     if "c_attn" in n or "c_proj" in n or "c_fc" in n:
-#         target_modules.append(n)
-# lora_cfg = LoraConfig(
-#     r = cfg.lora_rank,
-#     target_modules=target_modules,
-#     modules_to_save=["transformer.wte", "transformer.wpe", "lm_head"],
-# )
+target_modules = []
+for n, m in model.named_modules():
+    if "c_attn" in n or "c_proj" in n or "c_fc" in n:
+        target_modules.append(n)
+lora_cfg = LoraConfig(
+    r = cfg.lora_rank,
+    target_modules=target_modules,
+    # modules_to_save=["transformer.wte", "transformer.wpe", "lm_head"],
+)
 
-# # Print lora trainable parameters
-# model = peft.get_peft_model(model, lora_cfg)
-# model.print_trainable_parameters()
+# Print lora trainable parameters
+model = get_peft_model(model, lora_cfg)
+model.print_trainable_parameters()
 
 train(cfg, model, train_loader, val_loader)
 wandb.finish()
